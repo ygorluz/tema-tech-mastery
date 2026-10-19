@@ -1,0 +1,63 @@
+---
+import { readData } from '../../lib/readData';
+import { getCollection } from 'astro:content';
+import { normalizeCategories, type CategoryEntry } from '../../lib/categorySlug';
+
+export interface Props {
+    colorVariant?: string;
+}
+
+const { colorVariant = "text-primary" } = Astro.props;
+const menuData = readData('menu.json');
+const menuItems = menuData.items || [];
+const categoriesData = readData('categories.json', []);
+
+let allCategories: CategoryEntry[] = normalizeCategories(categoriesData);
+if (!allCategories.length) {
+    const posts = await getCollection('blog');
+    const fromPosts = [...new Set(posts.map(p => p.data.category).filter(Boolean))];
+    allCategories = normalizeCategories(fromPosts);
+}
+
+function buildSubItems(nav: any) {
+    if (nav.showCategories === true) {
+        return allCategories.map((cat) => ({
+            label: cat.name,
+            href: `/categoria/${cat.slug}`
+        }));
+    }
+    return Array.isArray(nav.categories) ? nav.categories : [];
+}
+---
+<nav class="navigation-menu">
+    <ul class="flex">
+        {menuItems.map((nav: any) => {
+            const subItems = buildSubItems(nav);
+            const hasSub = subItems.length > 0;
+            return (
+                <li class={`relative mr-12 group last:mr-0 ${hasSub ? 'cms-dropdown' : ''}`}>
+                    <a
+                        href={nav.href}
+                        class={`block font-semibold group-hover:text-primary py-7 transition-colors ${colorVariant} ${hasSub ? 'cms-dropdown-trigger' : ''}`}
+                        {...(hasSub ? { 'data-cms-dropdown-trigger': '' } : {})}
+                    >
+                        {nav.label}
+                        {hasSub && <i class="icofont-simple-down ml-1 cms-dropdown-chevron"></i>}
+                    </a>
+
+                    {hasSub && (
+                        <ul class="cms-dropdown-panel top-full left-0 absolute w-[220px] bg-white border-b-[3px] border-primary py-4 shadow-xl opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-300 translate-y-[20px] group-hover:translate-y-0 z-30">
+                            {subItems.map((item: any) => (
+                                <li>
+                                    <a href={item.href} class="block text-heading-light font-semibold py-2 px-6 hover:text-primary hover:bg-gray-50 transition-all">
+                                        {item.label}
+                                    </a>
+                                </li>
+                            ))}
+                        </ul>
+                    )}
+                </li>
+            );
+        })}
+    </ul>
+</nav>

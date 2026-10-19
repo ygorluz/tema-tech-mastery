@@ -1,0 +1,91 @@
+---
+import { getCategorySlug } from '../../lib/categorySlug';
+import { BLOG_BASE } from '../../lib/postUrl';
+/**
+ * RelatedPosts.astro — Plugin Related Posts
+ *
+ * Exibe posts relacionados por categoria após o author box.
+ * Filtra por mesma categoria, exclui post atual, embaralha e limita.
+ */
+import { getCollection } from 'astro:content';
+import { readData } from '../../lib/readData';
+
+interface Props {
+  currentSlug: string;
+  category: string;
+  count?: number;
+}
+
+const { currentSlug, category, count } = Astro.props;
+
+const pluginsConfig = readData('pluginsConfig.json', {}) as any;
+const relatedConfig = pluginsConfig?.relatedPosts;
+const enabled = relatedConfig?.enabled !== false;
+const maxCount = count ?? relatedConfig?.count ?? 3;
+
+let relatedPosts: any[] = [];
+
+if (enabled && category) {
+  const allPosts = await getCollection('blog');
+  const filtered = allPosts.filter(p =>
+    p.slug !== currentSlug &&
+    p.data.category === category &&
+    !p.data.draft
+  );
+
+  // Shuffle
+  for (let i = filtered.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [filtered[i], filtered[j]] = [filtered[j], filtered[i]];
+  }
+
+  relatedPosts = filtered.slice(0, maxCount);
+}
+---
+
+{enabled && relatedPosts.length > 0 && (
+  <section class="mt-16 pt-12 border-t border-gray-200">
+    <h3 class="text-2xl md:text-3xl font-bold font-heading text-primary mb-8">Artigos Relacionados</h3>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {relatedPosts.map(post => {
+        const postDate = post.data.pubDate instanceof Date
+          ? post.data.pubDate.toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' })
+          : new Date(post.data.pubDate).toLocaleDateString('pt-BR', { day: '2-digit', month: 'long', year: 'numeric' });
+        const postCategory = post.data.category || '';
+        const catSlug = getCategorySlug(postCategory);
+        return (
+          <article class="group bg-white rounded-xl border border-gray-100 shadow-sm hover:shadow-lg transition-all overflow-hidden flex flex-col">
+            {post.data.heroImage && (
+              <a href={`${BLOG_BASE}/${post.slug}`} class="block relative overflow-hidden aspect-[16/10]">
+                <img
+                  src={post.data.heroImage}
+                  alt={post.data.title}
+                  loading="lazy"
+                  class="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                />
+                {postCategory && (
+                  <a
+                    href={`/categoria/${catSlug}`}
+                    class="absolute top-3 left-3 inline-block bg-white/95 backdrop-blur text-primary text-xs font-bold uppercase tracking-wider px-3 py-1 rounded-md hover:bg-primary hover:text-white transition-colors"
+                  >
+                    {postCategory}
+                  </a>
+                )}
+              </a>
+            )}
+            <div class="p-5 flex flex-col flex-1">
+              <p class="text-sm text-gray-500 mb-2">{postDate}</p>
+              <h4 class="text-lg font-bold font-heading text-heading leading-tight mb-3 group-hover:text-primary transition-colors line-clamp-2">
+                <a href={`${BLOG_BASE}/${post.slug}`}>{post.data.title}</a>
+              </h4>
+              {post.data.description && (
+                <p class="text-sm text-gray-600 line-clamp-2 leading-relaxed">{post.data.description}</p>
+              )}
+            </div>
+          </article>
+        );
+      })}
+    </div>
+  </section>
+)}

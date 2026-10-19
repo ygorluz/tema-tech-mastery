@@ -1,0 +1,176 @@
+---
+import { BLOG_BASE } from '../../lib/postUrl';
+import { getCollection } from 'astro:content';
+import { readData } from '../../lib/readData';
+import { readingTimeLabel } from '../../lib/readingTime';
+
+const homeData = readData('home.json');
+const allPosts = (await getCollection('blog'))
+  .filter(p => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+
+const heroSlugs = homeData.hero?.slugs || [];
+const heroPosts = heroSlugs.length > 0
+    ? heroSlugs.map(slug => allPosts.find(p => p.slug === slug)).filter(Boolean)
+    : allPosts.slice(0, homeData.hero?.postLimit || 4);
+
+const authors = readData('authors.json', []);
+
+function formatDate(date: Date) {
+    return new Date(date).toLocaleDateString('pt-BR', {
+        day: '2-digit',
+        month: 'long',
+        year: 'numeric'
+    });
+}
+const heroData = homeData.hero || {};
+const heroBgRaw = heroData.image || "/assets/bunzo/images/hero/hero-three.webp";
+const heroBg = heroBgRaw.includes('/uploads/') ? heroBgRaw : heroBgRaw.replace(/\.jpg$/, '.webp').replace(/\.png$/, '.webp');
+const heroTitle = heroData.title || '';
+const heroDescription = heroData.description || '';
+const heroCtaText = heroData.ctaText || '';
+const heroCtaHref = heroData.ctaHref || '';
+const hasPosts = heroPosts.length > 0;
+---
+
+<div class="hero-bg-wrap relative flex items-center min-h-[600px] md:min-h-[820px]" style="contain:layout style; isolation:isolate;">
+    <img src={heroBg} alt="" width="1920" height="820" fetchpriority="high" decoding="sync" class="absolute inset-0 w-full h-full object-cover" style="z-index:-1;">
+    {hasPosts ? (
+        <div class="swiper hero-three-slider w-full">
+            <div class="swiper-wrapper">
+                {heroPosts.map((post: any, idx: number) => (
+                    <div class="swiper-slide">
+                        <div class="container mx-auto px-4">
+                            <div class="grid grid-cols-12 items-center">
+                                <div class="col-span-12 lg:col-span-6 order-last lg:order-first">
+                                    <div class="content text-white xl:pr-20 mt-10 lg:mt-0">
+                                        <p class="text-white mb-6 hover:text-accent transition-colors font-medium">
+                                            <span class="text-white/80">Por</span>
+                                            {(() => {
+                                                const a = authors.find((au: any) => au.id === post.data.author) || { name: post.data.author };
+                                                return <span>{a.name}</span>;
+                                            })()}
+                                        </p>
+                                        {idx === 0 ? (
+                                            <h1 class="text-white text-3xl md:text-4xl lg:text-[45px] font-bold font-heading hover:text-accent transition-colors leading-tight">
+                                                <a href={`${BLOG_BASE}/${post.slug}`}>
+                                                    {post.data.title}
+                                                </a>
+                                            </h1>
+                                        ) : (
+                                            <h2 class="text-white text-3xl md:text-4xl lg:text-[45px] font-bold font-heading hover:text-accent transition-colors leading-tight">
+                                                <a href={`${BLOG_BASE}/${post.slug}`}>
+                                                    {post.data.title}
+                                                </a>
+                                            </h2>
+                                        )}
+                                        <div class="text-lg sm:text-xl text-white font-normal pt-4 opacity-90 leading-relaxed font-base" set:html={post.data.description}></div>
+                                        <div class="meta flex items-center mt-8 text-accent font-medium">
+                                            <div class="flex items-center">
+                                                <i class="icofont-ui-calendar"></i>
+                                                <p class="pl-2">{formatDate(post.data.pubDate)}</p>
+                                            </div>
+                                            <div class="flex items-center pl-5">
+                                                <i class="icofont-clock-time"></i>
+                                                <p class="pl-2">{readingTimeLabel(post)}</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="col-span-12 lg:col-span-6 order-first lg:order-last">
+                                    <div class="rounded-[10px] overflow-hidden border-2 border-primary lg:h-[400px] p-2.5 sm:p-5 bg-white/5 backdrop-blur-sm">
+                                        <a href={`${BLOG_BASE}/${post.slug}`}>
+                                            {idx === 0 ? (
+                                                <img src={post.data.heroImage || post.data.image} alt={post.data.title} width="742" height="400" fetchpriority="high" decoding="async" class="w-full h-full object-cover rounded-xl shadow-2xl transition-transform duration-500 hover:scale-105">
+                                            ) : (
+                                                <img src={post.data.heroImage || post.data.image} alt={post.data.title} width="742" height="400" loading="lazy" decoding="async" class="w-full h-full object-cover rounded-xl shadow-2xl transition-transform duration-500 hover:scale-105">
+                                            )}
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                ))}
+            </div>
+            <!-- Pagination -->
+            <div class="swiper-pagination !-translate-x-1/2 bottom-10 md:bottom-15 swiper-pagination-style"></div>
+        </div>
+    ) : (
+        <!-- FALLBACK: sem posts — mostra título/descrição do admin -->
+        <div class="container mx-auto px-4">
+            <div class="max-w-3xl text-center mx-auto py-20">
+                <div class="absolute inset-0 bg-black/40 z-[-1]"></div>
+                {heroTitle && (
+                    <h1 class="text-white text-4xl md:text-5xl lg:text-6xl font-bold font-heading leading-tight drop-shadow-lg">
+                        {heroTitle}
+                    </h1>
+                )}
+                {heroDescription && (
+                    <div class="text-lg sm:text-xl text-white font-normal pt-6 opacity-95 leading-relaxed drop-shadow-md" set:html={heroDescription}></div>
+                )}
+                {heroCtaText && heroCtaHref && (
+                    <div class="mt-10">
+                        <a href={heroCtaHref} class="inline-block bg-primary hover:bg-accent text-white font-bold text-base px-8 py-4 rounded-xl transition-colors shadow-xl">
+                            {heroCtaText}
+                        </a>
+                    </div>
+                )}
+                {!heroTitle && !heroDescription && (
+                    <p class="text-white/80 text-lg font-medium">
+                        Bem-vindo! Adicione seu primeiro artigo para que ele apareça aqui.
+                    </p>
+                )}
+            </div>
+        </div>
+    )}
+</div>
+
+<style is:inline>
+    .swiper-pagination-style .swiper-pagination-bullet {
+        width: 1rem;
+        height: 1rem;
+        background-color: var(--color-primary);
+        margin-right: 1rem !important;
+        border-radius: 9999px;
+        opacity: 0.5;
+        transition: all 0.3s;
+    }
+    .swiper-pagination-style .swiper-pagination-bullet-active {
+       background-color: white !important;
+       opacity: 1;
+       width: 2.5rem;
+    }
+</style>
+
+<script>
+    import Swiper from 'swiper';
+    import { Pagination, EffectFade, Autoplay } from 'swiper/modules';
+
+    function initHeroSwiper() {
+        new Swiper('.hero-three-slider', {
+            modules: [Pagination, EffectFade, Autoplay],
+            speed: 800,
+            slidesPerView: 1,
+            spaceBetween: 10,
+            effect: "fade",
+            fadeEffect: {
+                crossFade: true
+            },
+            pagination: {
+                el: '.swiper-pagination',
+                clickable: true,
+            },
+            autoplay: {
+                delay: 5000,
+                disableOnInteraction: false,
+            },
+        });
+    }
+
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', initHeroSwiper);
+    } else {
+        initHeroSwiper();
+    }
+</script>

@@ -1,0 +1,84 @@
+---
+import BunzoLayout from '../../layouts/BunzoLayout.astro';
+import Sidebar from '../../components/Sidebar.astro';
+import Breadcrumb from '../../components/bunzo/Breadcrumb.astro';
+import PostStyleTwo from '../../components/bunzo/PostStyleTwo.astro';
+import { readData } from '../../lib/readData';
+import { getCollection } from 'astro:content';
+
+export async function getStaticPaths() {
+  function slugify(s) {
+    return String(s || '').toLowerCase()
+      .normalize('NFD').replace(/[̀-ͯ]/g, '')
+      .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+  }
+  const categoriesData = readData('categories.json', []);
+  const posts = await getCollection('blog');
+
+  const allCats = (Array.isArray(categoriesData) ? categoriesData : []).map((c) => {
+    if (c && typeof c === 'object' && c.name) return { name: String(c.name), slug: String(c.slug || slugify(c.name)) };
+    if (typeof c === 'string' && c.trim()) return { name: c.trim(), slug: slugify(c) };
+    return null;
+  }).filter(Boolean);
+
+  const known = new Set();
+  allCats.forEach(c => { known.add(c.slug); known.add(c.name); });
+  for (const p of posts) {
+    const cat = p.data.category;
+    if (!cat || known.has(cat)) continue;
+    const s = slugify(cat);
+    if (!known.has(s)) { allCats.push({ name: cat, slug: s }); known.add(s); known.add(cat); }
+  }
+
+  return allCats.map(cat => ({
+    params: { categoria: cat.slug },
+    props: { categoryName: cat.name, categorySlug: cat.slug },
+  }));
+}
+
+const { categoryName, categorySlug } = Astro.props;
+function slug(s) {
+  return String(s || '').toLowerCase()
+    .normalize('NFD').replace(/[̀-ͯ]/g, '')
+    .replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)+/g, '');
+}
+const allPosts = (await getCollection('blog'))
+  .filter(p => !p.data.draft)
+  .sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf());
+const posts = allPosts.filter(p => {
+  const c = p.data.category || '';
+  return c === categoryName || c === categorySlug || slug(c) === categorySlug;
+});
+---
+
+<BunzoLayout title={categoryName} description={`Artigos sobre ${categoryName}`}>
+  <Breadcrumb title={categoryName} link="Categorias" url="/blog" />
+
+  <section class="py-section bg-gray-50 font-base">
+    <div class="container mx-auto px-4">
+      <div class="grid grid-cols-12 gap-10">
+        <!-- Posts List -->
+        <div class="col-span-12 lg:col-span-8">
+          {posts.length === 0 && (
+            <div class="bg-white rounded-xl border border-gray-100 p-12 text-center text-gray-500 shadow-sm">
+              <i class="icofont-files-stack text-6xl text-gray-200 mb-4 block"></i>
+              <p class="text-xl font-bold text-heading">Nenhum artigo encontrado</p>
+              <p class="mt-2">Ainda não temos artigos nesta categoria.</p>
+            </div>
+          )}
+
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {posts.map(post => (
+              <PostStyleTwo post={post} excerpt={true} />
+            ))}
+          </div>
+        </div>
+
+        <!-- Sidebar -->
+        <aside class="col-span-12 lg:col-span-4">
+          <Sidebar />
+        </aside>
+      </div>
+    </div>
+  </section>
+</BunzoLayout>

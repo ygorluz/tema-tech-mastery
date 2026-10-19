@@ -1,0 +1,43 @@
+/* IcoFont - Subset: only 19 icons used in this theme */
+@font-face {
+    font-display: swap;
+    font-family: IcoFont;
+    font-weight: 400;
+    font-style: normal;
+    src: url(/assets/bunzo/fonts/icofont.woff2) format('woff2'),
+        url(/assets/bunzo/fonts/icofont.woff) format('woff');
+}
+[class*=' icofont-'],
+[class^='icofont-'] {
+    font-family: IcoFont !important;
+    speak: none;
+    font-style: normal;
+    font-weight: 400;
+    font-variant: normal;
+    text-transform: none;
+    white-space: nowrap;
+    word-wrap: normal;
+    direction: ltr;
+    line-height: 1;
+    -webkit-font-feature-settings: 'liga';
+    -webkit-font-smoothing: antialiased;
+}
+.icofont-check-circled:before { content: '\eed7'; }
+.icofont-clock-time:before { content: '\eedc'; }
+.icofont-close-line:before { content: '\eee1'; }
+.icofont-envelope:before { content: '\ef14'; }
+.icofont-error:before { content: '\ef16'; }
+.icofont-facebook:before { content: '\ed37'; }
+.icofont-files-stack:before { content: '\e96e'; }
+.icofont-google-map:before { content: '\ed42'; }
+.icofont-instagram:before { content: '\ed46'; }
+.icofont-linkedin:before { content: '\ed4d'; }
+.icofont-long-arrow-left:before { content: '\ea93'; }
+.icofont-long-arrow-right:before { content: '\ea94'; }
+.icofont-phone:before { content: '\efbb'; }
+.icofont-search:before { content: '\ed1b'; }
+.icofont-simple-down:before { content: '\eab2'; }
+.icofont-thin-down:before { content: '\eac8'; }
+.icofont-twitter:before { content: '\ed7a'; }
+.icofont-ui-calendar:before { content: '\ec45'; }
+.icofont-youtube:before { content: '\ed8b'; }

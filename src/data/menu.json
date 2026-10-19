@@ -1,0 +1,21 @@
+{
+    "items": [
+        {
+            "label": "Home",
+            "href": "/"
+        },
+        {
+            "label": "Blog",
+            "href": "/blog",
+            "showCategories": true
+        },
+        {
+            "label": "Sobre",
+            "href": "/sobre"
+        },
+        {
+            "label": "Contato",
+            "href": "/contato"
+        }
+    ]
+}
